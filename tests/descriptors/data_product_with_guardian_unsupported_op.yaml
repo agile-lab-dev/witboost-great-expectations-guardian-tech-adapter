@@ -1,0 +1,136 @@
+dataProductOwnerDisplayName: Name Surname
+projectOwner: user:name.surname_agilelab.it
+projectOwnerDisplayName: Name Surname
+environment: development
+domain: marketing
+projectKind: system
+kind: dataproduct
+domainId: urn:dmb:dmn:marketing
+id: urn:dmb:dp:marketing:system-with-data-contract:0
+description: A system with a data contract
+devGroup: agile_lab
+ownerGroup: name.surname_agilelab.it
+name: System with Data Contract
+fullyQualifiedName: System with Data Contract
+version: 0.1.0-SNAPSHOT-4
+useCaseTemplateId: urn:dmb:utm:dataproduct-aws-cdp-template:0.0.0
+infrastructureTemplateId: urn:dmb:itm:cdp-aws-dataproduct-provisioner:1
+dataProductOwner: user:name.surname_agilelab.it
+email: name.surname@agilelab.it
+informationSLA: null
+status: Draft
+maturity: null
+billing: {}
+tags: []
+specific: {}
+consumable: false
+shoppable: false
+taxonomy:
+  id: urn:dmb:taxonomy:data-mesh-taxonomy
+  name: data-mesh-taxonomy
+components:
+  - kind: outputport
+    id: urn:dmb:cmp:marketing:system-with-data-contract:0:consumable-data-contract2
+    description: A Consumable Data Contract
+    __dataContractEnabled: true
+    consumable: true
+    shoppable: true
+    name: Consumable Data Contract2
+    fullyQualifiedName: Consumable Data Contract2
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:snowflake-outputport-provisioner:0
+    useCaseTemplateId: urn:dmb:utm:snowflake-outputport-template:0.0.0
+    dependsOn: []
+    platform: AWS
+    technology: Databricks
+    outputPortType: SQL
+    processDescription: Good process
+    dataContract:
+      settings:
+        ingestionMode: DATA_AT_REST
+        onBrokenDCMode: RED_FLAG
+      schema: []
+      termsAndConditions: Conditions and terms
+      SLA:
+        intervalOfChange: 2 days
+        timeliness: 15 minutes
+        upTime: 99.9%
+      quality: []
+    dataSharingAgreement:
+      purpose: Use it for fun
+      billing: 10 euros per TB
+      security: Security info
+      intendedUsage: For fun, just for fun
+      limitations: No limitations
+      lifeCycle: null
+      confidentiality: null
+    tags: []
+    sampleData: {}
+    semanticLinking: []
+    specific: {}
+  - kind: workload
+    fullyQualifiedName: Guardian Workload
+    description: Guardian Workload
+    version: 0.0.0
+    useCaseTemplateId: urn:dmb:utm:gx-guardian-template:0.0.0
+    connectionType: DATAPIPELINE
+    tags: []
+    dependsOn: []
+    specific: {}
+    name: Guardian        
+    infrastructureTemplateId: urn:dmb:itm:data-contract-demo-tech-adapter:1
+    consumable: false
+    shoppable: false
+    __dataContractGuardianSpec:
+      guards:
+        - dataContractId: urn:dmb:cmp:marketing:system-with-data-contract:0:consumable-data-contract
+        - dataContractId: urn:dmb:cmp:marketing:system-with-data-contract:0:consumable-data-contract2
+    info:
+      privateInfo:
+        __dataContractGuardian:
+          policyId: '123'
+      publicInfo: {}
+    id: urn:dmb:cmp:marketing:system-with-data-contract:0:guardian
+  - kind: outputport
+    id: urn:dmb:cmp:marketing:system-with-data-contract:0:consumable-data-contract
+    description: A Consumable Data Contract
+    __dataContractEnabled: true
+    consumable: true
+    shoppable: true
+    name: Consumable Data Contract
+    fullyQualifiedName: Consumable Data Contract
+    version: 0.0.0
+    infrastructureTemplateId: urn:dmb:itm:snowflake-outputport-provisioner:0
+    useCaseTemplateId: urn:dmb:utm:snowflake-outputport-template:0.0.0
+    dependsOn: []
+    platform: AWS
+    technology: Snowflake
+    outputPortType: SQL
+    processDescription: Good process
+    dataContract:
+      settings:
+        ingestionMode: DATA_AT_REST
+        onBrokenDCMode: RED_FLAG
+      schema: []
+      termsAndConditions: Conditions and terms
+      SLA:
+        intervalOfChange: 2 days
+        timeliness: 15 minutes
+        upTime: 99.9%
+      quality: []
+    dataSharingAgreement:
+      purpose: Use it for fun
+      billing: 10 euros per TB
+      security: Security info
+      intendedUsage: For fun, just for fun
+      limitations: No limitations
+      lifeCycle: null
+      confidentiality: null
+    tags: []
+    sampleData: {}
+    semanticLinking: []
+    specific:
+      database: db
+      schema: schema
+      tableName: table1
+      viewName: view1

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, List, Literal, Optional, Type
+from typing import Annotated, Any, List, Literal, Optional, Type
 
 from pydantic import (
     AnyUrl,
@@ -78,6 +78,8 @@ class OpenMetadataColumn(BaseModel):
 
 
 class DataContract(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     schema_: List[OpenMetadataColumn] = Field(..., alias="schema")
 
 
@@ -117,7 +119,8 @@ class Component(BaseModel):
     name: str
     fullyQualifiedName: Optional[str] = None
     description: str
-    specific: dict
+    dataContractEnabled: bool = Field(False, alias="__dataContractEnabled")
+    specific: Any
 
 
 class OutputPort(Component):
@@ -443,3 +446,17 @@ class DataProduct(BaseModel):
             if type(obs) is Observability:
                 observability_APIs.append(obs)
         return observability_APIs
+
+    def get_data_contract_components(self) -> List[Component]:
+        """
+        Filters the components associated with the data product and returns
+        a list containing only the components that are defined as Data Contracts
+
+        Returns:
+            List[Component]: A list of Component objects that have __dataContractEnabled equal to true.
+            If no matching components are found, an empty list is returned.
+        """  # noqa: E501
+
+        return [
+            component for component in self.components if component.dataContractEnabled
+        ]

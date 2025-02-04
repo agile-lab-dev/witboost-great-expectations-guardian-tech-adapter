@@ -25,6 +25,9 @@ types-pyyaml = "^6.0"
 types-requests = "^2.32.0"
 urllib3 = "^2.2.2"
 virtualenv = "20.26.6"
+sqlmodel = "^0.0.22"
+snowflake-sqlalchemy = "^1.7.3"
+snowflake-connector-python = "^3.13.1"
 
 [tool.ruff]
 select = ["E", "F", "I"]

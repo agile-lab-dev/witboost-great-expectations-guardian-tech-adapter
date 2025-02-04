@@ -16,10 +16,11 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 - [OpenTelemetry Setup](docs/opentelemetry.md)
 - [Deploying](#deploying)
 - [API specification](docs/API.md)
+- [HLD](docs/HLD.md)
 
 ## Overview
 
-TODO
+This Tech Adapter provides the implementation of a [Data Contract Guardian](https://docs.witboost.com/docs/p1_user/p6_advanced/p6_10_data_contracts/p6_10_1_overview#data-contract-guardians) that use [Great Expectations](https://docs.greatexpectations.io/docs/core/introduction/) framework to validate [data contracts](https://docs.witboost.com/docs/p1_user/p6_advanced/p6_10_data_contracts/p6_10_1_overview/).
 
 ### What's a Specific Provisioner?
 

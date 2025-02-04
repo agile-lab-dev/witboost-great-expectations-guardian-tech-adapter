@@ -1,0 +1,53 @@
+dataProductOwnerDisplayName: Name Surname
+projectOwner: user:name.surname_agilelab.it
+projectOwnerDisplayName: Name Surname
+environment: development
+domain: marketing
+projectKind: system
+kind: dataproduct
+domainId: urn:dmb:dmn:marketing
+id: urn:dmb:dp:marketing:system-with-data-contract:0
+description: A system with a data contract
+devGroup: agile_lab
+ownerGroup: name.surname_agilelab.it
+name: System with Data Contract
+fullyQualifiedName: System with Data Contract
+version: 0.1.0-SNAPSHOT-4
+useCaseTemplateId: urn:dmb:utm:dataproduct-aws-cdp-template:0.0.0
+infrastructureTemplateId: urn:dmb:itm:cdp-aws-dataproduct-provisioner:1
+dataProductOwner: user:name.surname_agilelab.it
+email: name.surname@agilelab.it
+informationSLA: null
+status: Draft
+maturity: null
+billing: {}
+tags: []
+specific: {}
+consumable: false
+shoppable: false
+taxonomy:
+  id: urn:dmb:taxonomy:data-mesh-taxonomy
+  name: data-mesh-taxonomy
+components:
+  - kind: workload
+    fullyQualifiedName: Guardian Workload
+    description: Guardian Workload
+    version: 0.0.0
+    useCaseTemplateId: urn:dmb:utm:gx-guardian-template:0.0.0
+    connectionType: DATAPIPELINE
+    tags: []
+    dependsOn: []
+    specific: {}
+    name: Guardian        
+    infrastructureTemplateId: urn:dmb:itm:data-contract-demo-tech-adapter:1
+    consumable: false
+    shoppable: false
+    __dataContractGuardianSpec:
+      guards:
+        - dataContractId: urn:dmb:cmp:marketing:system-with-data-contract:0:consumable-data-contract
+    info:
+      privateInfo:
+        __dataContractGuardian:
+          policyId: '123'
+      publicInfo: {}
+    id: urn:dmb:cmp:marketing:system-with-data-contract:0:guardian

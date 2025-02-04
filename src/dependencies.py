@@ -2,6 +2,8 @@ from typing import Annotated, Tuple
 
 import yaml
 from fastapi import Depends
+from snowflake.sqlalchemy import URL
+from sqlalchemy import Engine, create_engine
 
 from src.models.api_models import (
     DescriptorKind,
@@ -10,6 +12,10 @@ from src.models.api_models import (
     ValidationError,
 )
 from src.models.data_product_descriptor import DataProduct
+from src.repositories.gx_task_repository import GxTaskRepository
+from src.repositories.snowflake_gx_task_repository import SnowflakeGxTaskRepository
+from src.services.provision_service import ProvisionService
+from src.settings.snowflake_settings import SnowflakeSettings
 from src.utility.logger import get_logger
 from src.utility.parsing_pydantic_models import parse_yaml_with_model
 
@@ -177,3 +183,36 @@ UnpackedUpdateAclRequestDep = Annotated[
     Tuple[DataProduct, str, list[str]] | ValidationError,
     Depends(unpack_update_acl_request),
 ]
+
+
+def get_snowflake_settings() -> SnowflakeSettings:
+    return SnowflakeSettings()
+
+
+def get_engine(
+    snowflake_settings: Annotated[SnowflakeSettings, Depends(get_snowflake_settings)]
+) -> Engine:
+    return create_engine(
+        URL(
+            account=snowflake_settings.account_identifier,
+            user=snowflake_settings.username,
+            password=snowflake_settings.password,
+            database=snowflake_settings.database_name,
+            schema=snowflake_settings.schema_name,
+            warehouse=snowflake_settings.warehouse_name,
+            role=snowflake_settings.role_name,
+        )
+    )
+
+
+def get_gx_task_repository(engine: Annotated[Engine, Depends(get_engine)]):
+    return SnowflakeGxTaskRepository(engine=engine)
+
+
+def get_provision_service(
+    gx_task_repository: Annotated[GxTaskRepository, Depends(get_gx_task_repository)]
+) -> ProvisionService:
+    return ProvisionService(repository=gx_task_repository)
+
+
+ProvisionServiceDep = Annotated[ProvisionService, Depends(get_provision_service)]
