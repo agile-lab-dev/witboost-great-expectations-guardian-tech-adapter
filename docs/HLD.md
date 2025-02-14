@@ -51,8 +51,6 @@ All GX workflows share a common pattern:
 
 The Tech Adapter uses Python and FastAPI to take advantage of the excellent [GX library](https://github.com/great-expectations/great_expectations) available for this language.
 
-The TA stores, for each component that is responsible to _guard_, the **component ID**, the **passive policy ID** along with the **descriptor** itself (or a subset of it). In this way, it's possible to have it running asynchronously, triggered by an orchestrator, and to send the results to **Witboost's CGP module**.
-
 The initial implementation supports only Snowflake as a Data Source.
 
 ## Validation
@@ -61,14 +59,11 @@ The initial implementation supports only Snowflake as a Data Source.
 
 ## Provisioning
 
-When the Guardian Workload is deployed, the Tech Adapter stores only the needed information to be able, later, to evaluate the contract(s).
+When the Guardian Workload is deployed, the Tech Adapter publish, for each component to guard, a DAG on Airflow that contains the business logic to:
+  - validate quality
+  - publish results
 
-The evaluation itself is asynchronous and is triggered by the orchestrator workload (the TA exposes an endpoint to execute the evaluation).
-
-The results of every evaluation are sent to the CGP Module.
-
-The Tech Adapter verifies timeliness expectations without a trigger from the orchestrator but based on an internal scheduler configuration. This allows it to detect problems if the orchestrator is not working properly, for example.
-This check can also be used to generate alerts or notifications as opposed to the [CGP timeliness check](https://docs.witboost.com/docs/p1_user/p6_advanced/p6_10_data_contracts/p6_10_2_creating_a_data_contract/#monitoring-result-scheduling).
+The evaluation itself is asynchronous and is triggered by the orchestrator workload: a _parent DAG_ triggers the _Guardian DAG_ using the _TriggerDagRunOperator_ so that, for example, the quality checks can be executed immediately after an ETL process.
 
 ![Provisioning](img/hld-Provisioning.png)
 
