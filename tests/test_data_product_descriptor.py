@@ -490,7 +490,7 @@ class TestDataProductDescriptor(unittest.TestCase):
         invalid_component_to_provision = request.get("componentIdToProvision")
 
         with pytest.raises(
-            pydantic_core.ValidationError, match="5 validation errors for OutputPort"
+            pydantic_core.ValidationError, match="4 validation errors for OutputPort"
         ):
             data_product.get_typed_component_by_id(
                 invalid_component_to_provision, OutputPort

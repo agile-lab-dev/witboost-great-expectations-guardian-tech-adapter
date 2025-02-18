@@ -1,0 +1,240 @@
+from __future__ import annotations
+from datetime import datetime
+from airflow.decorators import dag, task
+
+data_contract_id = "{{ data_contract_id }}"
+data_contract_id_for_dag_id = "{{ data_contract_id | replace(':', '_')}}"
+environment = "{{ environment }}"
+
+
+@dag(
+    dag_id=f"dag_{data_contract_id_for_dag_id}_{environment}",
+    description=f"Guardian for {data_contract_id} component (env: {environment})",
+    schedule=None,
+    start_date=datetime(2025, 1, 1),
+    catchup=False,
+    tags=["Data Contract", "GX", "Snowflake"],
+)
+def data_quality_dag():
+    @task.virtualenv(
+        system_site_packages=False,
+        requirements=[
+            "great-expectations[snowflake]==1.3.3",
+            "pydantic==2.10.6",
+        ],
+    )
+    def data_quality_task(conn=None) -> dict:
+        from great_expectations.datasource.fluent import SnowflakeDatasource
+        from great_expectations.core.batch_definition import BatchDefinition
+        import great_expectations as gx
+        from great_expectations.expectations import Expectation
+        from great_expectations.core import ExpectationSuiteValidationResult
+        from great_expectations.expectations.expectation_configuration import (
+            ExpectationConfiguration,
+        )
+        from typing import Any, Literal
+        import json
+        from pydantic import BaseModel, Field
+
+        class GXSnowflakeEvaluator:
+            def __init__(
+                self,
+                username,
+                password,
+                account,
+                warehouse,
+                role,
+                db,
+                schema,
+                table,
+            ):
+                self.context = gx.get_context()
+                self.username = username
+                self.password = password
+                self.account = account
+                self.warehouse = warehouse
+                self.role = role
+                self.db = db
+                self.schema = schema
+                self.table = table
+
+            def get_batch_definition(self) -> BatchDefinition:
+                data_source: SnowflakeDatasource = (
+                    self.context.data_sources.add_snowflake(
+                        name="snowflake_datasource",
+                        account=self.account,
+                        user=self.username,
+                        password=self.password,
+                        database=self.db,
+                        schema=self.schema,
+                        warehouse=self.warehouse,
+                        role=self.role,
+                    )
+                )
+                table_asset = data_source.add_table_asset(
+                    name=self.table, table_name=self.table
+                )
+                return table_asset.add_batch_definition_whole_table(name="FULL_TABLE")
+
+            def evaluate(
+                self, expectations: list[Expectation]
+            ) -> ExpectationSuiteValidationResult:
+                batch_definition = self.get_batch_definition()
+                expectation_suite = gx.ExpectationSuite(name="expectation_suite")
+                expectation_suite = self.context.suites.add(expectation_suite)
+                for expectation in expectations:
+                    expectation_suite.add_expectation(expectation)
+                validation_definition = gx.ValidationDefinition(
+                    data=batch_definition,
+                    suite=expectation_suite,
+                    name="validation_definition",
+                )
+                validation_definition = self.context.validation_definitions.add(
+                    validation_definition
+                )
+                validation_results = validation_definition.run()
+                return validation_results
+
+        class GXImplementation(BaseModel):
+            type: str
+            args: dict[str, Any]
+
+        class GXExpectation(BaseModel):
+            type: Literal["custom"]
+            engine: Literal["greatExpectations"]
+            implementation: GXImplementation
+
+        class GxDataContract(BaseModel):
+            quality: list[GXExpectation]
+
+        class SnowflakeSpecific(BaseModel):
+            database: str
+            schema_: str = Field(..., alias="schema")
+            tableName: str
+
+        class SnowflakeOutputPort(BaseModel):
+            technology: Literal["Snowflake"]
+            dataContract: GxDataContract
+            specific: SnowflakeSpecific
+
+        descriptor = """{{ descriptor | safe }}"""
+        data_contract_id = "{{ data_contract_id }}"
+
+        dict_descriptor = json.loads(descriptor)
+        data_contract_component = next(
+            c
+            for c in dict_descriptor["dataProduct"]["components"]
+            if c["id"] == data_contract_id
+        )
+        snowflake_op = SnowflakeOutputPort.model_validate(data_contract_component)
+
+        db = snowflake_op.specific.database
+        schema = snowflake_op.specific.schema_
+        table = snowflake_op.specific.tableName
+
+        def _meta(type: str, kwargs: dict[str, Any]) -> dict[str, str]:
+            return {
+                "key": f"""{type}({",".join([f"{k}={v}" for k,v in kwargs.items()])})"""
+            }
+
+        expectations = [
+            ExpectationConfiguration(
+                type=exp.implementation.type,
+                kwargs=exp.implementation.args,
+                meta=_meta(exp.implementation.type, exp.implementation.args),
+            ).to_domain_obj()
+            for exp in snowflake_op.dataContract.quality
+        ]
+
+        evaluator = GXSnowflakeEvaluator(
+            conn["username"],
+            conn["password"],
+            conn["account"],
+            conn["warehouse"],
+            conn["role"],
+            db,
+            schema,
+            table,
+        )
+        res = evaluator.evaluate(expectations)
+        return res.to_json_dict()
+
+    @task.virtualenv(
+        system_site_packages=False,
+        requirements=["requests==2.32.3"],
+    )
+    def push_results_task(results: dict) -> dict:
+        import requests
+
+        data_contract_id = "{{ data_contract_id }}"
+        passive_policy_id = "{{ passive_policy_id }}"
+        environment = "{{ environment }}"
+        cgp_base_url = "{{ cgp_base_url }}"
+
+        body = [
+            {
+                "resource": {
+                    "id": data_contract_id,
+                    "descriptor": "",
+                },
+                "result": {
+                    "satisfiesPolicy": results["success"],
+                    "details": {
+                        "results": {
+                            "root": [
+                                {
+                                    "key": "dataContract",
+                                    "name": "Data Contract",
+                                    "description": "Data Contract section",
+                                    "children": [
+                                        {
+                                            "key": "quality",
+                                            "name": "Quality",
+                                            "description": "Quality checks",
+                                            "children": [
+                                                {
+                                                    "key": result["expectation_config"][
+                                                        "meta"
+                                                    ]["key"],
+                                                    "compliant": result["success"],
+                                                    "issues": []
+                                                    if result["success"]
+                                                    else ["Failed control"],
+                                                }
+                                                for result in results["results"]
+                                            ],
+                                        }
+                                    ],
+                                }
+                            ]
+                        },
+                        "notes": {
+                            "errorSummary": {
+                                "message": "One or more Data Contract violations detected"
+                                if not results["success"]
+                                else ""
+                            }
+                        },
+                    },
+                },
+            }
+        ]
+
+        cgp_api_path = f"/datamesh.provisioningcoordinator/v1/computational-governance/policies/{passive_policy_id}/evaluation-results"
+        params = {"environment": environment}
+        res = requests.post(cgp_base_url + cgp_api_path, json=body, params=params)
+        res.raise_for_status()
+
+    results = data_quality_task(
+        conn={
+            "username": "{% raw %}{{ conn.{% endraw %}{{ airflow_connection_id }}{% raw %}.login }}{% endraw %}",
+            "password": "{% raw %}{{ conn.{% endraw %}{{ airflow_connection_id }}{% raw %}.password }}{% endraw %}",
+            "account": "{% raw %}{{ conn.{% endraw %}{{ airflow_connection_id }}{% raw %}.extra_dejson.account }}{% endraw %}",
+            "warehouse": "{% raw %}{{ conn.{% endraw %}{{ airflow_connection_id }}{% raw %}.extra_dejson.warehouse }}{% endraw %}",
+            "role": "{% raw %}{{ conn.{% endraw %}{{ airflow_connection_id }}{% raw %}.extra_dejson.role }}{% endraw %}",
+        }
+    )
+    push_results_task(results)
+
+
+dq_dag = data_quality_dag()

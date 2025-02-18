@@ -25,9 +25,7 @@ types-pyyaml = "^6.0"
 types-requests = "^2.32.0"
 urllib3 = "^2.2.2"
 virtualenv = "20.26.6"
-sqlmodel = "^0.0.22"
-snowflake-sqlalchemy = "^1.7.3"
-snowflake-connector-python = "^3.13.1"
+boto3 = "^1.36.15"
 
 [tool.ruff]
 select = ["E", "F", "I"]
@@ -35,6 +33,11 @@ line-length = 120
 
 [tool.pytest.ini_options]
 addopts = "-v"
+
+[tool.coverage.run]
+omit = [
+  "src/templates/*.jinja"
+]
 
 [tool.coverage.report]
 fail_under = 90
@@ -71,8 +74,3 @@ authorized_licenses = [
 unauthorized_licenses = [
     "gnu general public license v2 (gplv2)"
 ]
-
-
-# pytest
-[pytest]
-asyncio_mode = "auto"

@@ -12,6 +12,7 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 
 - [Overview](#overview)
 - [Building](#building)
+- [Configuring](#configuring)
 - [Running](#running)
 - [OpenTelemetry Setup](docs/opentelemetry.md)
 - [Deploying](#deploying)
@@ -21,6 +22,13 @@ This repository is part of our [Starter Kit](https://github.com/agile-lab-dev/wi
 ## Overview
 
 This Tech Adapter provides the implementation of a [Data Contract Guardian](https://docs.witboost.com/docs/p1_user/p6_advanced/p6_10_data_contracts/p6_10_1_overview#data-contract-guardians) that use [Great Expectations](https://docs.greatexpectations.io/docs/core/introduction/) framework to validate [data contracts](https://docs.witboost.com/docs/p1_user/p6_advanced/p6_10_data_contracts/p6_10_1_overview/).
+
+When the Guardian Workload is deployed, the Tech Adapter publish, for each component to guard, a DAG on Airflow that contains the business logic to:
+  - execute quality checks with Great Expectations
+  - publish results on CGP
+
+The initial implementation supports only Snowflake as a Data Source.
+More details are available on [HLD](docs/HLD.md).
 
 ### What's a Specific Provisioner?
 
@@ -112,6 +120,20 @@ More details can be found [here](docs/docker.md).
 _Note:_ the version for the project is automatically computed using information gathered from Git, using branch name and tags. Unless you are on a release branch `1.2.x` or a tag `v1.2.3` it will end up being `0.0.0`. You can follow this branch/tag convention or update the version computation to match your preferred strategy.
 
 **CI/CD:** the pipeline is based on GitLab CI as that's what we use internally. It's configured by the `.gitlab-ci.yaml` file in the root of the repository. You can use that as a starting point for your customizations.
+
+## Configuring
+
+Application configurations are handled with environment variables:
+
+| Environment Variable             | Description                                                                        |
+|----------------------------------|------------------------------------------------------------------------------------|
+| CGP_BASE_URL                     | Base URL of Witboost CGP                                                           |
+| S3_DAG_BUCKET_NAME               | Bucket name where to upload Airflow DAGs                                           |
+| S3_DAG_FOLDER                    | Folder where to upload Airflow DAGs                                                |          
+| AIRFLOW_CONNECTION_ID            | Airflow Connection ID where the required connection settings are defined           |
+
+S3 client configuration is based on standard AWS SDK configuration approach, meaning it honors the settings in the AWS config file (either at the default path, or at the one specified by AWS_CONFIG_FILE).
+This means that if you need to set up authentication to S3 in a way that is not the default approach taken by the AWS SDK, you should update the config file by either including your custom one in the Docker image or mount a proper one in the container at runtime. Some settings can also be changed using environment variables (eg, AWS Access Key settings), again following standard AWS SDK behavior.
 
 ## Running
 

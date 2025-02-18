@@ -1,9 +1,8 @@
+from functools import lru_cache
 from typing import Annotated, Tuple
 
 import yaml
 from fastapi import Depends
-from snowflake.sqlalchemy import URL
-from sqlalchemy import Engine, create_engine
 
 from src.models.api_models import (
     DescriptorKind,
@@ -12,10 +11,13 @@ from src.models.api_models import (
     ValidationError,
 )
 from src.models.data_product_descriptor import DataProduct
-from src.repositories.gx_task_repository import GxTaskRepository
-from src.repositories.snowflake_gx_task_repository import SnowflakeGxTaskRepository
+from src.repositories.dag_repository import DagRepository
+from src.repositories.s3_dag_repository import S3DagRepository
 from src.services.provision_service import ProvisionService
-from src.settings.snowflake_settings import SnowflakeSettings
+from src.services.template_service import TemplateService
+from src.settings.airflow_settings import AirflowSettings
+from src.settings.cgp_settings import CGPSettings
+from src.settings.s3_dag_settings import S3DagSettings
 from src.utility.logger import get_logger
 from src.utility.parsing_pydantic_models import parse_yaml_with_model
 
@@ -185,34 +187,40 @@ UnpackedUpdateAclRequestDep = Annotated[
 ]
 
 
-def get_snowflake_settings() -> SnowflakeSettings:
-    return SnowflakeSettings()
+@lru_cache
+def get_cgp_settings() -> CGPSettings:
+    return CGPSettings()
 
 
-def get_engine(
-    snowflake_settings: Annotated[SnowflakeSettings, Depends(get_snowflake_settings)]
-) -> Engine:
-    return create_engine(
-        URL(
-            account=snowflake_settings.account_identifier,
-            user=snowflake_settings.username,
-            password=snowflake_settings.password,
-            database=snowflake_settings.database_name,
-            schema=snowflake_settings.schema_name,
-            warehouse=snowflake_settings.warehouse_name,
-            role=snowflake_settings.role_name,
-        )
-    )
+def get_template_service() -> TemplateService:
+    return TemplateService()
 
 
-def get_gx_task_repository(engine: Annotated[Engine, Depends(get_engine)]):
-    return SnowflakeGxTaskRepository(engine=engine)
+@lru_cache
+def get_s3_dag_settings() -> S3DagSettings:
+    return S3DagSettings()
+
+
+@lru_cache
+def get_airflow_settings() -> AirflowSettings:
+    return AirflowSettings()
+
+
+def get_dag_repository(
+    s3_dag_settings: Annotated[S3DagSettings, Depends(get_s3_dag_settings)]
+) -> DagRepository:
+    return S3DagRepository(s3_dag_settings)
 
 
 def get_provision_service(
-    gx_task_repository: Annotated[GxTaskRepository, Depends(get_gx_task_repository)]
+    dag_repository: Annotated[DagRepository, Depends(get_dag_repository)],
+    template_service: Annotated[TemplateService, Depends(get_template_service)],
+    cgp_settings: Annotated[CGPSettings, Depends(get_cgp_settings)],
+    airflow_settings: Annotated[AirflowSettings, Depends(get_airflow_settings)],
 ) -> ProvisionService:
-    return ProvisionService(repository=gx_task_repository)
+    return ProvisionService(
+        dag_repository, template_service, cgp_settings, airflow_settings
+    )
 
 
 ProvisionServiceDep = Annotated[ProvisionService, Depends(get_provision_service)]

@@ -17,6 +17,7 @@ spec:
         app: {{ template "pythonsp.name" . }}
 {{- include "pythonsp.labels" . | nindent 8 }}
     spec:
+      serviceAccountName: gx-guardian-service-account
       automountServiceAccountToken: false
       {{- if .Values.dockerRegistrySecretName }}
       imagePullSecrets:

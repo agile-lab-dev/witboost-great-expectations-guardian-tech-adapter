@@ -139,7 +139,7 @@ class OutputPort(Component):
     retentionTime: Optional[str] = None
     processDescription: Optional[str] = None
     dataContract: DataContract
-    dataSharingAgreement: DataSharingAgreement
+    dataSharingAgreement: Optional[DataSharingAgreement] = None
     tags: List[OpenMetadataTagLabel]
     sampleData: Optional[dict] = None  # OpenMetadataTable
     semanticLinking: List[dict]
