@@ -117,7 +117,7 @@ def data_quality_dag():
             dataContract: GxDataContract
             specific: SnowflakeSpecific
 
-        descriptor = """{{ descriptor | safe }}"""
+        descriptor = r"""{{ descriptor | safe }}"""
         data_contract_id = "{{ data_contract_id }}"
 
         dict_descriptor = json.loads(descriptor)

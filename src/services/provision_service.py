@@ -3,7 +3,7 @@ import json
 import yaml
 from fastapi.encoders import jsonable_encoder
 
-from src.models.api_models import ProvisioningStatus, Status1, SystemErr
+from src.models.api_models import Info, ProvisioningStatus, Status1, SystemErr
 from src.models.data_product_descriptor import DataProduct
 from src.models.gx_models import GXComponent, GXGuardianWorkload
 from src.repositories.dag_repository import DagRepository, DagRepositoryError
@@ -37,6 +37,10 @@ class ProvisionService:
         descriptor_json_str = json.dumps(
             jsonable_encoder(yaml.safe_load(full_descriptor))
         )
+        if workload.info is None:
+            error_msg = "Missing passive policy infos in Guardian descriptor"
+            self.logger.error(error_msg)
+            return SystemErr(error=error_msg)
         for data_contract in data_contracts:
             self.logger.info(
                 "Rendering DAG Template for data contract with ID: %s",
@@ -63,7 +67,11 @@ class ProvisionService:
             )
             if isinstance(res, DagRepositoryError):
                 return SystemErr(error=res.error_msg)
-        return ProvisioningStatus(status=Status1.COMPLETED, result="")
+        return ProvisioningStatus(
+            status=Status1.COMPLETED,
+            result="",
+            info=Info(publicInfo=dict(), privateInfo=dict()),
+        )
 
     def unprovision(
         self,

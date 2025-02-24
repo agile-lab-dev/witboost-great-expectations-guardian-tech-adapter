@@ -35,7 +35,7 @@ class GXGuardianWorkload(Workload):
         alias="__dataContractGuardianSpec"
     )
     specific: GXWorkloadSpecific
-    info: GuardianInfo
+    info: GuardianInfo | None = None
 
 
 class GXImplementation(BaseModel):
