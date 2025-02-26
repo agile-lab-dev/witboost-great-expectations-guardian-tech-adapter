@@ -166,42 +166,9 @@ class Workload(Component):
     platform: Optional[str] = None
     technology: Optional[str] = None
     workloadType: Optional[str] = None
-    connectionType: ConnectionTypeWorkload
+    connectionType: Optional[str] = None
     tags: List[OpenMetadataTagLabel]
-    readsFrom: Optional[List[InputWorkload]] = None
-
-    def __init__(self, **data):
-        reads_from_values = data.get("readsFrom", [])
-        connection_type = data.get("connectionType")
-
-        input_workloads = []
-
-        # ReadsFrom is filled only for DataPipeline workloads
-        if (
-            connection_type != ConnectionTypeWorkload.DATAPIPELINE
-            and len(reads_from_values) > 0
-        ):
-            raise ValueError(
-                "readsFrom is only allowed when connectionType is 'DATAPIPELINE'"  # noqa: E501
-            )
-
-        # Output Ports are identified with DP_UK:$OutputPortName,
-        # while external systems will be defined by a URN in the form urn:dmb:ex:$SystemName    # noqa: E501
-        for reads_from_value in reads_from_values:
-            if reads_from_value.startswith("DP_UK:"):
-                input_workload = InputWorkload(outputPortName=reads_from_value)
-            elif reads_from_value.startswith("urn:dmb:ex:"):
-                input_workload = InputWorkload(systemName=reads_from_value)
-            else:
-                raise ValueError(
-                    f"Incorrect value in readsFrom: {reads_from_value}. "
-                    f"Value should start with DP_UK: or urn:dmb:ex:"
-                )
-
-            input_workloads.append(input_workload)
-
-        data["readsFrom"] = input_workloads
-        super().__init__(**data)
+    readsFrom: Optional[List[str]] = None
 
     @field_validator("kind")
     @classmethod

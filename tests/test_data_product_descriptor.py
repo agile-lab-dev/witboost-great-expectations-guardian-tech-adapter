@@ -5,7 +5,6 @@ import pydantic_core
 import pytest
 import yaml
 
-from src.models.api_models import ValidationError
 from src.models.data_product_descriptor import (
     ComponentKind,
     ConnectionTypeWorkload,
@@ -354,70 +353,6 @@ class TestDataProductDescriptor(unittest.TestCase):
         with pytest.raises(ValueError):
             OpenMetadataColumn.check_dataType("invalid_type", invalid_column_data)
 
-    def test_workload_correct_readsFrom(self):
-        input_data = """
-          id: "123"
-          name: "Workload1"
-          fullyQualifiedName: "example.Workload1"
-          description: "Description"
-          specific:
-            version: "1.0"
-          kind: "workload"
-          version: "1.0"
-          infrastructureTemplateId: "template1"
-          dependsOn:
-            - "dependency1"
-            - "dependency2"
-          readsFrom:
-            - "DP_UK:123"
-            - "urn:dmb:ex:456"
-            - "DP_UK:789"
-            - "urn:dmb:ex:101112"
-          connectionType: "DATAPIPELINE"
-          tags: []
-        """
-
-        workload = parse_yaml_with_model(input_data, Workload)
-
-        self.assertEqual(workload.id, "123")
-        self.assertEqual(workload.name, "Workload1")
-        self.assertEqual(workload.fullyQualifiedName, "example.Workload1")
-        self.assertEqual(workload.description, "Description")
-        self.assertEqual(workload.specific, {"version": "1.0"})
-        self.assertEqual(workload.kind, ComponentKind.WORKLOAD)
-
-        self.assertEqual(len(workload.readsFrom), 4)
-        self.assertEqual(workload.readsFrom[0].outputPortName, "DP_UK:123")
-        self.assertEqual(workload.readsFrom[1].systemName, "urn:dmb:ex:456")
-        self.assertEqual(workload.readsFrom[2].outputPortName, "DP_UK:789")
-        self.assertEqual(workload.readsFrom[3].systemName, "urn:dmb:ex:101112")
-
-    def test_workload_incorrect_readsFrom(self):
-        input_data = """
-          id: "123"
-          name: "Workload1"
-          fullyQualifiedName: "example.Workload1"
-          description: "Description"
-          specific:
-            version: "1.0"
-          kind: "workload"
-          version: "1.0"
-          infrastructureTemplateId: "template1"
-          dependsOn:
-            - "dependency1"
-            - "dependency2"
-          readsFrom:
-            - "ERROR_UK:123"
-            - "urn:dmb:ex:456"
-            - "DP_UK:789"
-            - "urn:dmb:ex:101112"
-          connectionType: "DATAPIPELINE"
-          tags: []
-        """
-        result = parse_yaml_with_model(input_data, Workload)
-        assert isinstance(result, ValidationError)
-        self.assertIn("Incorrect value in readsFrom:", result.errors[0])
-
     def test_workload_without_readsFrom(self):
         input_data = """
           id: "123"
@@ -438,36 +373,6 @@ class TestDataProductDescriptor(unittest.TestCase):
 
         result = parse_yaml_with_model(input_data, Workload)
         assert isinstance(result, Workload)
-
-    def test_workload_readsFrom_invalid_connectionType(self):
-        input_data = """
-            id: "123"
-            name: "Workload1"
-            fullyQualifiedName: "example.Workload1"
-            description: "Description"
-            specific:
-            version: "1.0"
-            kind: "workload"
-            version: "1.0"
-            infrastructureTemplateId: "template1"
-            dependsOn:
-            - "dependency1"
-            - "dependency2"
-            readsFrom:
-            - "DP_UK:123"
-            - "urn:dmb:ex:456"
-            - "DP_UK:789"
-            - "urn:dmb:ex:101112"
-            connectionType: "housekeeping"
-            tags: []
-            """
-
-        result = parse_yaml_with_model(input_data, Workload)
-        assert isinstance(result, ValidationError)
-        self.assertIn(
-            "readsFrom is only allowed when connectionType is 'DATAPIPELINE'",
-            result.errors[0],
-        )
 
     def test_get_typed_component_output_port(self):
         descriptor_str = Path(
